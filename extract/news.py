@@ -4,8 +4,8 @@ import json
 from nltk.tokenize import sent_tokenize
 from model.ner import NERTagger
 from model.postag import POSTagger
+from model.confidence_value import ConfidenceValueGenerator
 import random
-from model.postag import POSTagger
 from model.tuple import get_predictor
 import pandas as pd
 from tqdm import tqdm
@@ -16,6 +16,7 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 INPUT_FILE_PATH = os.path.join(DIRPATH, 'data', 'news.jsonl')
 OUTPUT_CSV = os.path.join(DIRPATH, 'result', 'news.csv')
 NUMERICAL_TAG = ('MON', 'PRC', 'CRD', 'QTY')
+EXTRACT_THRESHOLD = 0.5
 
 
 class TokenLabelOfSentence:
@@ -72,6 +73,7 @@ to_csv = {
 }
 
 data_id = 0
+confidence_value_generator = ConfidenceValueGenerator()
 
 def print_sentence_to_file(sentences, title):
     global data_id
@@ -87,7 +89,8 @@ def print_sentence_to_file(sentences, title):
             token_idx_range = range(numerical_token_label.token_begin_idx, numerical_token_label.token_end_idx+1)
             predictor = RelPredictor(sentence, token_idx_range, POSTagger())
             arg0, pred, arg1 = predictor.get_tuple()
-            if arg0 and pred and arg1:
+            confidence_value = confidence_value_generator.confidence_value(sentence, arg0, pred, arg1)
+            if arg0 and pred and arg1 and confidence_value > EXTRACT_THRESHOLD:
                 to_csv["id"].append(data_id)
                 to_csv["title"].append(title)
                 to_csv["sentence"].append(sentence)
