@@ -1,0 +1,128 @@
+import os
+import re
+import json
+from nltk.tokenize import sent_tokenize
+from model.ner import NERTagger
+from model.postag import POSTagger
+import random
+from model.tuple import get_predictor
+import pandas as pd
+
+INPUT_FILE_PATH = 'data/wikipedia'
+OUTPUT_CSV = 'result/wikipedia.csv'
+NUMERICAL_TAG = ('MON', 'PRC', 'CRD', 'QTY')
+
+
+class TokenLabelOfSentence:
+
+    def __init__(self, char_begin_idx, char_end_idx, token_begin_idx, token_end_idx, label):
+        self.char_begin_idx = char_begin_idx
+        self.char_end_idx = char_end_idx
+        self.token_begin_idx = token_begin_idx
+        self.token_end_idx = token_end_idx
+        self.label = label
+
+    def __repr__(self):
+        return "TokenLabelOfSentence(char_idx {}-{}, token_idx {}-{}, label {})".format(
+            self.char_begin_idx, self.char_end_idx, self.token_begin_idx, self.token_end_idx, self.label)
+
+def get_labels(sentence, words, tags):
+    result = []
+    ptr = 0
+    for i in range(len(words)):
+        word = words[i]
+        tag = tags[i]
+        while sentence[ptr].isspace():
+            ptr += 1
+        if sentence[ptr:ptr+len(word)] != word:
+            print('guessed word != word')
+            print(sentence)
+            print(sentence[ptr:ptr+len(word)])
+            print(word)
+            return []
+
+        if tag[0] == 'B':
+            result.append(TokenLabelOfSentence(ptr, ptr+len(word), i, i, tag[2:]))
+        elif tag[0] == 'I':
+            if not (result and result[-1].label == tag[2:]):
+                print('=== BROKEN TAGS ===')
+                print(sentence)
+                print(result)
+                print(tag)
+                ptr += len(word)
+                continue
+            result[-1].char_end_idx = ptr+len(word)
+            result[-1].token_end_idx = i
+        ptr += len(word)
+    return result
+
+
+to_csv = {
+    "id": [],
+    "title": [],
+    "sentence": [],
+    "ARG0": [],
+    "PRED": [],
+    "ARG1": [],
+}
+
+data_id = 0
+
+def print_sentence_to_file(sentences, title):
+    global data_id
+    sentence_list = sent_tokenize(sentences)
+    for sentence in sentence_list:
+        ner_tagger = NERTagger(POSTagger())
+        tags = ner_tagger.tag(sentence)
+        words = ner_tagger.sent_tokenized
+        labels = get_labels(sentence, words, tags)
+        filtered_token_labels = list(filter(lambda token_label: token_label.label in NUMERICAL_TAG, labels))
+        for numerical_token_label in filtered_token_labels:
+            RelPredictor = get_predictor(numerical_token_label.label)
+            token_idx_range = range(numerical_token_label.token_begin_idx, numerical_token_label.token_end_idx+1)
+            predictor = RelPredictor(sentence, token_idx_range, POSTagger())
+            arg0, pred, arg1 = predictor.get_tuple()
+            if arg0 and pred and arg1:
+                to_csv["id"].append(data_id)
+                to_csv["title"].append(title)
+                to_csv["sentence"].append(sentence)
+                to_csv["ARG0"].append(arg0)
+                to_csv["PRED"].append(pred)
+                to_csv["ARG1"].append(arg1)
+                data_id += 1
+
+
+
+with open(INPUT_FILE_PATH) as input_file:
+    documents = []
+    paragraphes = []
+    title = ""
+    sentences = ""
+
+    cur_sentence = []
+    for line in input_file:
+        line = line.strip()
+        if line[:4] == '<doc':
+            title = re.search('title="(.*)"', line).group(1)
+            sentences = ""
+            paragraphs = []
+        elif line[:5] == '</doc':
+            if sentences:
+                paragraphes.append(sentences)
+                print_sentence_to_file
+            (sentences, title)
+
+            documents.append(paragraphes)
+        elif line:
+            if sentences:
+                sentences += " "
+            sentences += line
+        else:
+            if paragraphes and sentences:
+                print_sentence_to_file(sentences, title)
+            paragraphes.append(sentences)
+
+            sentences = ""
+
+df = pd.DataFrame(to_csv)
+df.to_csv(OUTPUT_CSV, header=True, index=False)
