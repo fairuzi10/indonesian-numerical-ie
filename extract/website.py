@@ -12,11 +12,9 @@ from nltk.tokenize.treebank import TreebankWordDetokenizer
 from tqdm import tqdm
 import subprocess
 
-
-
-
-INPUT_FILE_PATH = 'data/website.vert'
-OUTPUT_CSV = 'result/website.csv'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))
+INPUT_FILE_PATH = os.path.join(DIRPATH, 'data', 'website.vert')
+OUTPUT_CSV = oslpath.join(DIRPATH, 'result', 'website.csv')
 NUMERICAL_TAG = ('MON', 'PRC', 'CRD', 'QTY')
 
 

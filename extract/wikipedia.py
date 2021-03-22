@@ -7,9 +7,12 @@ from model.postag import POSTagger
 import random
 from model.tuple import get_predictor
 import pandas as pd
+from tqdm import tqdm
+import subprocess
 
-INPUT_FILE_PATH = 'data/wikipedia'
-OUTPUT_CSV = 'result/wikipedia.csv'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))
+INPUT_FILE_PATH = os.path.join(DIRPATH, 'data', 'wikipedia')
+OUTPUT_CSV = os.path.join(DIRPATH, 'result', 'wikipedia.csv')
 NUMERICAL_TAG = ('MON', 'PRC', 'CRD', 'QTY')
 
 
@@ -91,7 +94,8 @@ def print_sentence_to_file(sentences, title):
                 to_csv["ARG1"].append(arg1)
                 data_id += 1
 
-
+def line_count(filename):
+    return int(subprocess.check_output(['wc', '-l', filename]).split()[0])
 
 with open(INPUT_FILE_PATH) as input_file:
     documents = []
@@ -100,7 +104,7 @@ with open(INPUT_FILE_PATH) as input_file:
     sentences = ""
 
     cur_sentence = []
-    for line in input_file:
+    for line in tqdm(input_file, total=line_count(INPUT_FILE_PATH)):
         line = line.strip()
         if line[:4] == '<doc':
             title = re.search('title="(.*)"', line).group(1)
