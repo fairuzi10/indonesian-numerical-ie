@@ -18,7 +18,8 @@ This repository contains the source code and the dataset used in my bachelor the
 
 We use Google Colab to run the jupyter notebook file in `train/` folder.
 Run each file from `POS_tag.ipynb`, `NER.ipynb`, and `confidence_value.ipynb`.
-Each of them will result binary model file that can be used in `extract/model` for extraction.
+Each of them will result binary model file that can be used in `extract/model/` for extraction.
+If you want to get our trained binary model rightaway, go to [this Goole Drive folder](https://drive.google.com/drive/folders/1cBZFzSGGbnmfm5L1Usc_rt3xCyqd-DN3?usp=sharing) and download them to the `extract/model/` folder.
 
 ## Extraction
 
