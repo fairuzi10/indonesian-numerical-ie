@@ -29,4 +29,4 @@ Run them and the result will be in folder `extract/result/`.
 
 ## License
 
-TODO
+This code is provided under [the licence CC BY-NC-SA 4.0: Attribution-NonCommercial-ShareAlike](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
